@@ -12,6 +12,8 @@ from pdf2image import convert_from_path
 
 from kumikolib import Kumiko
 
+info = []
+
 parser = argparse.ArgumentParser(description="Kumiko CLI")
 
 # Input/Output
@@ -78,17 +80,24 @@ if args.pdf:
         print("The specified file is not a valid PDF.")
         sys.exit(1)
 
+    parentFolderName = os.path.basename(os.path.dirname(file_or_folder))
+    pdfBaseName = os.path.splitext(os.path.basename(file_or_folder))[0]
+    outputBasePath = os.path.join("./output", parentFolderName, pdfBaseName)
+
     # Convert PDF to images
     images = convert_from_path(file_or_folder)
     for i, image in enumerate(images):
-        image_path = f"{os.path.splitext(file_or_folder)[0]}_page_{i}.jpg"
-        image.save(image_path, "JPEG")
+        image_output_path = os.path.join(outputBasePath, f"page_{i}.jpg")
+        if not os.path.exists(outputBasePath):
+            os.makedirs(outputBasePath)
+        image.save(image_output_path, "JPEG")
 
-        # Process each image
-        info = k.parse_images([image_path])
         if args.save_panels:
+            # Process each image
+            info = k.parse_images([image_output_path])
             for item in info:
-                k.save_panels(image_path, item["panels"])
+                panel_output_path = os.path.join(outputBasePath, f"page_{i}")
+                k.save_panels(image_output_path, item["panels"], panel_output_path)
 
 # Folder
 elif len(args.input) == 1 and os.path.isdir(args.input[0]):
