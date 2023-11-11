@@ -172,18 +172,23 @@ class Kumiko:
 
         return panels
 
-    def save_panels(self, image_path, panels, output_format="jpg"):
-        # Extract the base name of the image file
-        base_name = os.path.splitext(os.path.basename(image_path))[0]
-        output_dir = os.path.join("./output", base_name)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    def save_panels(self, image_path, panels, output_path=None, output_format="jpg"):
+        # Set default output_dir if not specified
+        if output_path is None:
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            output_path = os.path.join("./output", base_name)
+
+        # Ensure the output directory exists
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
         # Load the original image
         image = cv.imread(image_path)
+
+        # Iterate over each panel and save it
         for i, (x, y, width, height) in enumerate(panels):
             panel = image[y : y + height, x : x + width]
-            output_file = os.path.join(output_dir, f"panel_{i}.{output_format}")
+            output_file = os.path.join(output_path, f"panel_{i}.{output_format}")
             cv.imwrite(output_file, panel)
 
     def split_panels(self, panels):

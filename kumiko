@@ -8,6 +8,8 @@ import os
 import shutil
 import sys
 
+from pdf2image import convert_from_path
+
 from kumikolib import Kumiko
 
 parser = argparse.ArgumentParser(description="Kumiko CLI")
@@ -27,6 +29,11 @@ parser.add_argument(
     "--save-panels",
     action="store_true",
     help="Enable this option to save detected panels as images",
+)
+parser.add_argument(
+    "--pdf",
+    action="store_true",
+    help="Indicates the input is a PDF file to be converted to images",
 )
 
 # Configuration tweaks
@@ -64,13 +71,44 @@ file_or_folder = args.input[0]
 folder = None
 html_file = None
 
+
+# PDF File
+if args.pdf:
+    if not os.path.isfile(file_or_folder):
+        print("The specified file is not a valid PDF.")
+        sys.exit(1)
+
+    # Convert PDF to images
+    images = convert_from_path(file_or_folder)
+    for i, image in enumerate(images):
+        image_path = f"{os.path.splitext(file_or_folder)[0]}_page_{i}.jpg"
+        image.save(image_path, "JPEG")
+
+        # Process each image
+        info = k.parse_images([image_path])
+        if args.save_panels:
+            for item in info:
+                k.save_panels(image_path, item["panels"])
+
 # Folder
-if len(args.input) == 1 and os.path.isdir(args.input[0]):
+elif len(args.input) == 1 and os.path.isdir(args.input[0]):
     folder = args.input[0]
     if folder[-1] == "/":
         folder = folder[0:-1]
     info = k.parse_dir(folder)
-    html_file = os.path.join("tests/results", os.path.basename(folder) + ".html")
+    originalFolderName = os.path.basename(folder)
+    html_file = os.path.join("tests/results", originalFolderName + ".html")
+
+    if args.save_panels:
+        for f in os.listdir(folder):
+            file_path = os.path.join(folder, f)
+            if os.path.isfile(file_path):
+                panels_info = k.parse_images([file_path])
+                for item in panels_info:
+                    output_path = os.path.join(
+                        "./output", originalFolderName, os.path.splitext(f)[0]
+                    )
+                    k.save_panels(file_path, item["panels"], output_path)
 
 # File
 elif len(args.input) == 1 and os.path.isfile(args.input[0]):
