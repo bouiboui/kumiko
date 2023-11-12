@@ -10,6 +10,8 @@ import requests
 from lib.debug import Debug
 from lib.panel import Panel
 
+from pathlib import Path
+
 
 class NotAnImageException(Exception):
     pass
@@ -183,13 +185,13 @@ class Kumiko:
             os.makedirs(output_path)
 
         # Load the original image
-        image = cv.imread(image_path)
+        image = cv.imdecode(np.fromfile(image_path, dtype=np.uint8), cv.IMREAD_UNCHANGED)
 
         # Iterate over each panel and save it
         for i, (x, y, width, height) in enumerate(panels):
             panel = image[y : y + height, x : x + width]
             output_file = os.path.join(output_path, f"panel_{i}.{output_format}")
-            cv.imwrite(output_file, panel)
+            cv.imencode(f".{output_format}", panel)[1].tofile(output_file)
 
     def split_panels(self, panels):
         new_panels = []
@@ -317,7 +319,7 @@ class Kumiko:
         self.dbg.add_step("Expand panels", panels)
 
     def parse_image(self, filename, url=None):
-        self.img = cv.imread(filename)
+        self.img = cv.imdecode(np.fromfile(filename, dtype=np.uint8), cv.IMREAD_UNCHANGED)
         if not isinstance(self.img, np.ndarray) or self.img.size == 0:
             raise NotAnImageException("File {} is not an image".format(filename))
 

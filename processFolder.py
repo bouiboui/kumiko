@@ -2,19 +2,24 @@ import os
 import subprocess
 import argparse
 from tqdm import tqdm
+from pathlib import Path
 
 
 def process_folder(folder_path, pdf_flag, save_panels_flag):
-    pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.pdf')]
+    folder = Path(folder_path)
+    pdf_files = folder.glob('*.pdf')
 
-    for filename in tqdm(pdf_files, desc="Processing PDFs"):
-        file_path = os.path.join(folder_path, filename)
-        args = ["py.exe", "kumiko", "-i", file_path]
-        if pdf_flag:
-            args.append("--pdf")
-        if save_panels_flag:
-            args.append("-s")
-        subprocess.run(args)
+    for pdf_file in tqdm(pdf_files, desc="Processing PDFs"):
+        output_file = folder / f"{pdf_file.stem}_panel_0.jpg"  # Example output file check
+        if not output_file.exists():
+            args = ["py.exe", "kumiko", "-i", str(pdf_file)]
+            if pdf_flag:
+                args.append("--pdf")
+            if save_panels_flag:
+                args.append("-s")
+            subprocess.run(args)
+        else:
+            print(f"Skipping {pdf_file} as output already exists.")
 
 
 if __name__ == "__main__":
